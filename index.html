@@ -40,6 +40,18 @@ canvas { display: block; background: #2d2d2d; }
     </div>
 </div>
 <script>
+// Global error handler
+window.onerror = function(msg, url, line) {
+    console.error('GAME ERROR:', msg, 'at line', line);
+    var c = document.getElementById('gc');
+    if (c) {
+        var cx = c.getContext('2d');
+        cx.fillStyle = '#f00';
+        cx.font = '14px monospace';
+        cx.fillText('ERROR: ' + msg + ' (line ' + line + ')', 10, 20);
+    }
+};
+
 // ============================================================
 //  CONFIG
 // ============================================================
@@ -113,8 +125,8 @@ LEVELS.push({
         '..........................',
         '..@@......####......@@....',
         '..@@......####......@@....',
-        '........########........',
-        '........########........',
+        '........########..........',
+        '........########..........',
         '..####..............####..',
         '..####..##......##..####..',
         '.....##.##......##.##.....',
@@ -141,14 +153,14 @@ LEVELS.push({
         '..........~~~~~~..........',
         '..##..##..........##..##..',
         '..##..##..........##..##..',
-        '..##..##..@@@@..##..##..',
-        '..##..##..@@@@..##..##..',
+        '..##..##..@@@@..##..##....',
+        '..##..##..@@@@..##..##....',
         '..........~~~~~~..........',
         '..........~~~~~~..........',
         '..##..##..........##..##..',
         '..##..##..........##..##..',
-        '..##..##..##..##..##..##',
-        '..##..##..##..##..##..##',
+        '..##..##..##..##..##..##..',
+        '..##..##..##..##..##..##..',
         '..........~~~~~~..........',
         '..........~~~~~~..........',
         '..##..##..........##..##..',
@@ -173,8 +185,8 @@ LEVELS.push({
         '..@@..@@..@@..@@..@@..@@..',
         '..##..##..##..##..##..##..',
         '..##..##..##..##..##..##..',
-        '..##..##..##..##..##..##',
-        '..##..##..##..##..##..##',
+        '..##..##..##..##..##..##..',
+        '..##..##..##..##..##..##..',
         '..@@..##..........##..@@..',
         '..@@..##..........##..@@..',
         '..##......##..##......##..',
@@ -277,7 +289,7 @@ function mkTank(x, y, dir, player, etype) {
         player, alive: true,
         cd: 0,
         fireCD: player ? 250 : (et ? et.fireCD : 2000),
-        spawnTimer: 60,
+        spawnTimer: 0,  // start visible immediately
         etype: etype || 0,
         ecolor: et ? et.color : '#d32f2f',
         moveCD: 0,
@@ -441,7 +453,7 @@ document.addEventListener('keydown', e => {
     if (k === ' ' || k === 'Enter') e.preventDefault();
     // Enter handler
     if (k === 'Enter') {
-        if (G.state === 'MENU') { e.preventDefault(); startLevel(0); }
+        if (G.state === 'MENU') { e.preventDefault(); console.log('ENTER - starting game'); startLevel(0); }
         else if (G.state === 'GAMEOVER') { e.preventDefault(); G.score = 0; G.lives = 3; startLevel(0); }
         else if (G.state === 'LVL_DONE' && G.level + 1 >= LEVELS.length) { e.preventDefault(); G.score = 0; G.lives = 3; startLevel(0); }
     }
@@ -652,6 +664,10 @@ function render() {
     ctx.fillStyle = '#2d2d2d';
     ctx.fillRect(0, 0, PLAY_W, PLAY_H);
 
+    // State debug indicator
+    ctx.fillStyle = G.state === 'PLAYING' ? '#0f0' : '#f00';
+    ctx.fillRect(4, 4, 8, 8);
+
     // Subtle grid
     ctx.strokeStyle = 'rgba(255,255,255,0.03)';
     ctx.lineWidth = 1;
@@ -758,6 +774,13 @@ function render() {
         ctx.strokeStyle = '#3E2723';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(bx, by, TILE * 2, TILE * 2);
+    }
+
+    // Diagnostic: show player spawn area
+    if (G.player) {
+        ctx.strokeStyle = '#0ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(G.player.x, G.player.y, TANK_SZ, TANK_SZ);
     }
 
     // Tanks
